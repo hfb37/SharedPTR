@@ -3,7 +3,8 @@ cmake_minimum_required(VERSION 3.30)
 project(task2 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 26)
-set(SOURCE_EXE main.cpp)
+set(SOURCE_EXE main.cpp
+        test.h)
 
 add_executable(n1 ${SOURCE_EXE})
 
