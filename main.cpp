@@ -18,11 +18,7 @@ struct MyStruct {
     explicit MyStruct(int v) : value(v) {};
 };
 
-int main()
-    {
-    auto ptr = make_shared<int>(10);
-    std::cout << *ptr.get() << ' ';
-    ptr = new int(20);
-    std::cout << *ptr.get() << ' ';
-
+int main() {
+    SharedPTR<int> ptr;
+    ptr = new int(50);
 }

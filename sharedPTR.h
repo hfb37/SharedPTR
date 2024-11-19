@@ -27,8 +27,10 @@ public:
     // Constructors and destructor
     SharedPTR() : controlBlock(nullptr) {}
 
-    explicit SharedPTR(Type *pObject) : controlBlock(new ControlBlock(pObject)) {
-    }
+    explicit SharedPTR(nullptr_t) : controlBlock(nullptr) {}
+
+    explicit SharedPTR(Type *pObject) : controlBlock(new ControlBlock(pObject)) {}
+
 
     explicit SharedPTR(const t_SharedPTR &other) : controlBlock(other.controlBlock) {
         if (controlBlock) {
@@ -47,7 +49,7 @@ public:
 // Assignment
     SharedPTR& operator=(const t_SharedPTR &other) {
         if (this != &other) {
-            this->release();
+            release();
             controlBlock = other.controlBlock;
             if (controlBlock) {
                 ++(*controlBlock->refCount);
@@ -57,12 +59,8 @@ public:
     }
 
     SharedPTR& operator=(t_SharedPTR &&other) noexcept {
-        if (this != &other) {
-            release();
-            controlBlock = other.controlBlock;
-            other.controlBlock = nullptr;
-        }
-        else {other.controlBlock = nullptr;}
+        std::swap(controlBlock, other.controlBlock);
+        other.release();
         return *this;
     }
 
@@ -73,31 +71,47 @@ public:
 
 // Observers
     Type& operator*() const {
-        if (controlBlock->pObj == nullptr) {return NULL;}
+        if (!controlBlock) {return NULL;}
         else {return *controlBlock->pObj;}
     }
 
     Type* operator->() const {
-        return controlBlock->pObj;
+        if (controlBlock) {
+            return controlBlock->pObj;
+        }
+        else {
+            throw std::runtime_error("ControlBlock is nullptr");
+        }
     }
 
     Type* get() const {
-        return controlBlock->pObj;
+        if (controlBlock) {
+            return controlBlock->pObj;
+        }
+        else {
+            throw std::runtime_error("ControlBlock is nullptr");
+        }
     }
 
     TDeleter& get_deleter() {
-        return controlBlock->deleter;
+        if (controlBlock) {
+            return controlBlock->deleter;
+        }
+        return std::default_delete<Type>();
     }
 
-    long use_count() {
-        if (controlBlock->refCount == nullptr) {
-            return 0;
+    size_t use_count() {
+        if (controlBlock) {
+            return *controlBlock->refCount;
         }
-        else {return *controlBlock->refCount;}
+        return 0;
     }
 
     explicit operator bool() const {
-        return controlBlock->pObj != nullptr;
+        if (controlBlock) {
+            return controlBlock->pObj != nullptr;
+        }
+        return false;
     }
 
 // Modifiers
@@ -111,10 +125,19 @@ public:
     }
 
     void reset(Type* pObject = nullptr) {
-        release();
         if (pObject) {
-            controlBlock = new ControlBlock(pObject);
+            if (!controlBlock || controlBlock->pObj != pObject) {
+                release();
+                controlBlock = new ControlBlock(pObject);
+            }
         }
+        else {
+            release();
+        }
+//        release();
+//        if (pObject) {
+//            controlBlock = new ControlBlock(pObject);
+//        }
     }
 
     void swap(t_SharedPTR &sharedPTR) {
